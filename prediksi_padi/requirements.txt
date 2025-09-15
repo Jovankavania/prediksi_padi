@@ -1,6 +1,6 @@
-streamlit
+streamlit==1.49.1
 pandas
-scikit-learn
-openpyxl
+numpy
+scikit-learn==1.6.1
 joblib
-
+openpyxl
