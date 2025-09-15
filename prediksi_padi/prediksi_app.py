@@ -10,7 +10,8 @@ Original file is located at
 import streamlit as st
 import pandas as pd
 import joblib
-import altair as alt
+import matplotlib.pyplot as plt
+import numpy as np
 
 st.title("🌾 Prediksi Produksi Padi – Growth Projection")
 
@@ -59,49 +60,35 @@ if uploaded_file is not None:
         st.dataframe(df_proj[["Kecamatan","Tahun","Prediksi Produksi"]])
         st.write("📊 Total Produksi:", int(df_proj["Prediksi Produksi"].sum()))
 
-        # === VISUALISASI ===
-        # data aktual tahun terakhir
+        # === VISUALISASI (side-by-side) ===
         df_actual = df_last.reset_index()[["Kecamatan"]].copy()
         df_actual["Tahun"] = last_year
         df_actual["Produksi"] = df_last["Produksi"].values
 
-        # data prediksi
         df_prediksi = df_proj[["Kecamatan","Tahun","Prediksi Produksi"]].rename(
             columns={"Prediksi Produksi": "Produksi"}
         )
 
-        # gabung
         df_vis = pd.concat([df_actual, df_prediksi])
 
-        st.write("### 📈 Perbandingan Produksi Aktual vs Prediksi")
-        chart = (
-            alt.Chart(df_vis)
-            .mark_bar()
-            .encode(
-                x=alt.X("Kecamatan:N", sort="-y"),
-                y="Produksi:Q",
-                color="Tahun:N",
-                tooltip=["Kecamatan", "Tahun", "Produksi"]
-            )
-            .properties(width=700, height=400)
-        )
-        st.altair_chart(chart, use_container_width=True)
+        # urutkan kecamatan dari produksi aktual terbesar
+        order = df_actual.sort_values("Produksi", ascending=False)["Kecamatan"]
+        pivot_df = df_vis.pivot(index="Kecamatan", columns="Tahun", values="Produksi").reindex(order)
 
-        # total produksi bar chart
-        st.write("### 📊 Total Produksi: Aktual vs Prediksi")
-        df_total = df_vis.groupby("Tahun", as_index=False)["Produksi"].sum()
-        chart_total = (
-            alt.Chart(df_total)
-            .mark_bar()
-            .encode(
-                x="Tahun:N",
-                y="Produksi:Q",
-                color="Tahun:N",
-                tooltip=["Tahun", "Produksi"]
-            )
-            .properties(width=400, height=300)
-        )
-        st.altair_chart(chart_total, use_container_width=True)
+        x = np.arange(len(pivot_df.index))
+        width = 0.35
+
+        fig, ax = plt.subplots(figsize=(12,6))
+        rects1 = ax.bar(x - width/2, pivot_df[last_year], width, label=f"{last_year} (Aktual)")
+        rects2 = ax.bar(x + width/2, pivot_df[last_year+1], width, label=f"{last_year+1} (Prediksi)")
+
+        ax.set_ylabel("Produksi Padi (kw)")
+        ax.set_title(f"Perbandingan Produksi Padi {last_year} (Aktual) vs {last_year+1} (Prediksi, Growth-based)")
+        ax.set_xticks(x)
+        ax.set_xticklabels(pivot_df.index, rotation=45, ha="right")
+        ax.legend()
+
+        st.pyplot(fig)
 
 else:
     st.info("⬆️ Silakan unggah file Excel untuk mulai prediksi.")
