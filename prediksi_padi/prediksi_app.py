@@ -5,12 +5,23 @@ import altair as alt
 
 st.title("🌾 Prediksi Produksi Padi – Growth Projection")
 
+# 👉 Pengingat struktur tabel
+st.info("⚠️ Pastikan file Excel punya kolom berikut:\n\n"
+        "Kecamatan | Komoditas | Tahun | Luas Sawah | Luas Tanam | Luas Panen | Produksi")
+
+# daftar kolom wajib
+needed_cols = ["Kecamatan","Komoditas","Tahun","Luas Sawah","Luas Tanam","Luas Panen","Produksi"]
+
 # 1. Upload file Excel
 uploaded_file = st.file_uploader("Unggah data historis (Excel)", type=["xlsx"])
 
 if uploaded_file is not None:
     df_pred = pd.read_excel(uploaded_file)
-    st.write("✅ Data berhasil dimuat:")
+
+    # filter hanya kolom yang dibutuhkan
+    df_pred = df_pred[[c for c in needed_cols if c in df_pred.columns]]
+
+    st.write("✅ Data berhasil dimuat (kolom lain otomatis dihapus):")
     st.dataframe(df_pred.head())
 
     # 2. Load model
@@ -24,14 +35,14 @@ if uploaded_file is not None:
         # hitung growth rata-rata
         growth = (
             df_pred[df_pred["Tahun"].between(last_year-2, last_year)]
-            .groupby("Kecamatan")[["Luas Sawah","Luas Tanam","Luas Panen","Produktivitas Padi"]]
+            .groupby("Kecamatan")[["Luas Sawah","Luas Tanam","Luas Panen"]]
             .pct_change()
             .groupby(df_pred["Kecamatan"]).mean()
         )
 
         df_last = df_pred[df_pred["Tahun"] == last_year].set_index("Kecamatan")
         df_proj = df_last.copy()
-        df_proj[["Luas Sawah","Luas Tanam","Luas Panen","Produktivitas Padi"]] *= (1 + growth)
+        df_proj[["Luas Sawah","Luas Tanam","Luas Panen"]] *= (1 + growth)
 
         df_proj["Tahun"] = last_year + 1
         df_proj = df_proj.reset_index()
@@ -39,7 +50,7 @@ if uploaded_file is not None:
         # fitur turunan
         df_proj["Rasio_Tanam"] = df_proj["Luas Panen"] / (df_proj["Luas Tanam"]+1e-9)
         df_proj["Intensitas_Sawah"] = df_proj["Luas Tanam"] / (df_proj["Luas Sawah"]+1e-9)
-        df_proj["Prod_Ekspektasi"] = df_proj["Luas Panen"] * df_proj["Produktivitas Padi"]
+        df_proj["Prod_Ekspektasi"] = df_proj["Luas Panen"] * df_proj["Rasio_Tanam"]
 
         # prediksi
         X_proj = df_proj.drop(columns=["Tahun","Produksi"], errors="ignore")
@@ -69,7 +80,7 @@ if uploaded_file is not None:
                 x=alt.X("Kecamatan:N", sort="-y"),
                 y=alt.Y("Produksi:Q"),
                 color=alt.Color("Tahun:N", scale=alt.Scale(scheme="tableau10")),
-                xOffset="Tahun:N",  # 👉 bikin side-by-side
+                xOffset="Tahun:N",  # 👉 side-by-side
                 tooltip=["Kecamatan", "Tahun", "Produksi"]
             )
             .properties(width=700, height=400)
