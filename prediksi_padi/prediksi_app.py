@@ -25,7 +25,7 @@ if uploaded_file is not None:
     st.dataframe(df_pred.head())
 
     # 2. Load model
-    model = joblib.load("prediksi_padi/model_rf.pkl")
+    model = joblib.load("prediksi_padi/model_rf2.pkl")
 
     # 3. Tahun terakhir
     last_year = df_pred["Tahun"].max()
