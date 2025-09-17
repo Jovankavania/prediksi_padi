@@ -34,10 +34,10 @@ if uploaded_file is not None:
     if st.button("🔮 Proyeksikan Tahun Berikutnya"):
         # hitung growth rata-rata
         growth = (
-            df_pred[df_pred["Tahun"].between(last_year-2, last_year)]
-            .groupby("Kecamatan")[["Luas Sawah","Luas Tanam","Luas Panen"]]
-            .pct_change()
-            .groupby(df_pred["Kecamatan"]).mean()
+                df_pred[df_pred["Tahun"].between(last_year-2, last_year)]
+                .groupby("Kecamatan")[["Luas Sawah","Luas Tanam","Luas Panen"]].pct_change()
+                .clip(-0.1, 0.1)   #batasi 10%
+                .groupby(df_pred["Kecamatan"]).mean()
         )
 
         df_last = df_pred[df_pred["Tahun"] == last_year].set_index("Kecamatan")
