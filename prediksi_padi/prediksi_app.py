@@ -50,7 +50,8 @@ if uploaded_file is not None:
         # fitur turunan
         df_proj["Rasio_Tanam"] = df_proj["Luas Panen"] / (df_proj["Luas Tanam"]+1e-9)
         df_proj["Intensitas_Sawah"] = df_proj["Luas Tanam"] / (df_proj["Luas Sawah"]+1e-9)
-        df_proj["Prod_Ekspektasi"] = df_proj["Luas Panen"] * df_proj["Rasio_Tanam"]
+        df_proj["Panen_x_Intensitas"] = df_proj["Luas Panen"] * df_proj["Intensitas_Sawah"]
+        df_proj["Tanam_x_Rasio"]      = df_proj["Luas Tanam"] * df_proj["Rasio_Tanam"]
 
         # prediksi
         X_proj = df_proj.drop(columns=["Tahun","Produksi"], errors="ignore")
