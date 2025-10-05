@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 import altair as alt
 
 def do_clustering(df, n_clusters=3):
