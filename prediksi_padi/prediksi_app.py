@@ -106,13 +106,19 @@ if uploaded_file is not None:
         )
         st.altair_chart(chart_total, use_container_width=True)
 
-        #Clustering
-        if st.button("🧩 Lakukan Segmentasi Hasil Prediksi"):
-            df_clustered, chart_cluster = do_clustering(df_proj)
-            st.write("### 📊 Hasil Segmentasi Kecamatan")
+# === BAGIAN CLUSTERING (SETELAH PREDIKSI) ===
+if st.session_state.df_proj is not None:
+    st.write("---")
+    st.subheader("🔍 Segmentasi Hasil Prediksi Produksi")
+    
+    if st.button("🧩 Lakukan Segmentasi Hasil Prediksi"):
+        try:
+            df_clustered, chart_cluster = do_clustering(st.session_state.df_proj)
+            st.success("✅ Segmentasi berhasil dilakukan!")
             st.dataframe(df_clustered[["Kecamatan", "Cluster", "Prediksi Produksi"]])
             st.altair_chart(chart_cluster, use_container_width=True)
-
+        except Exception as e:
+            st.error(f"Terjadi kesalahan saat melakukan clustering: {e}")
 
 else:
     st.info("⬆️ Silakan unggah file Excel untuk mulai prediksi.")
