@@ -63,21 +63,27 @@ def do_clustering(df, n_clusters=3):
         2: "Cluster 3 – Produksi Tinggi"
     })
 
+    # --- reduksi dimensi dengan PCA ---
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X_scaled)
+    df_clustered = df.copy()
+    df_clustered["Cluster"] = labels
+    df_clustered["PC1"] = X_pca[:, 0]
+    df_clustered["PC2"] = X_pca[:, 1]
+
     # --- buat visualisasi sederhana ---
     chart = (
         alt.Chart(df_clustered)
         .mark_circle(size=200)
         .encode(
-            x=alt.X("Prediksi Produksi:Q", title="Produksi Prediksi"),
-            y=alt.Y("Luas Panen:Q", title="Luas Panen"),
+            x=alt.X("PC1:Q", title="Komponen Utama 1"),
+            y=alt.Y("PC2:Q", title="Komponen Utama 2"),
             color=alt.Color("Cluster:N", scale=alt.Scale(scheme="tableau10")),
-            tooltip=[
-                "Kecamatan","Prediksi Produksi","Luas Sawah","Luas Tanam",
-                "Luas Panen","Rasio_Tanam","Intensitas_Sawah","Cluster","Kategori"
-            ]
+            tooltip=["Kecamatan","Cluster","Prediksi Produksi","Luas Panen",
+                     "Luas Tanam","Luas Sawah","Rasio_Tanam","Intensitas_Sawah"]
         )
         .properties(width=700, height=400,
-                    title="📊 Segmentasi Kecamatan Berdasarkan Produksi & Lahan")
+                    title="📊 Segmentasi Kecamatan (PCA 2D Projection)")
     )
-
+    
     return df_clustered, chart
