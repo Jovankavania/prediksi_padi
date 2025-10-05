@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import altair as alt
-from prediksi_padi.src.clustering_prediksi import do_clustering
+from src.clustering_prediksi import do_clustering
 
 
 st.title("🌾 Prediksi Produksi Padi – Growth Projection")
