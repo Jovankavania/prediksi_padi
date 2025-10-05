@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import altair as alt
-from src.clustering_prediksi import do_clustering   # ✅ pastikan path-nya sesuai strukturmu
+from src.clustering_prediksi import do_clustering
 
 st.title("🌾 Prediksi Produksi Padi – Growth Projection")
 
@@ -12,6 +12,10 @@ st.info("⚠️ Pastikan file Excel punya kolom berikut:\n\n"
 
 # daftar kolom wajib
 needed_cols = ["Kecamatan","Komoditas","Tahun","Luas Sawah","Luas Tanam","Luas Panen","Produksi"]
+
+# ✅ inisialisasi penyimpanan state
+if "df_proj" not in st.session_state:
+    st.session_state.df_proj = None
 
 # 1. Upload file Excel
 uploaded_file = st.file_uploader("Unggah data historis (Excel)", type=["xlsx"])
@@ -37,7 +41,7 @@ if uploaded_file is not None:
         growth = (
                 df_pred[df_pred["Tahun"].between(last_year-2, last_year)]
                 .groupby("Kecamatan")[["Luas Sawah","Luas Tanam","Luas Panen"]].pct_change()
-                .clip(-0.1, 0.1)   #batasi 10%
+                .clip(-0.1, 0.1)
                 .groupby(df_pred["Kecamatan"]).mean()
         )
 
@@ -59,11 +63,14 @@ if uploaded_file is not None:
         y_pred_proj = model.predict(X_proj)
         df_proj["Prediksi Produksi"] = y_pred_proj.round(0)
 
+        # ✅ simpan hasil prediksi ke session_state
+        st.session_state.df_proj = df_proj
+
         st.success(f"✅ Prediksi Produksi Padi Tahun {last_year+1}")
         st.dataframe(df_proj[["Kecamatan","Tahun","Prediksi Produksi"]])
         st.write("📊 Total Produksi:", int(df_proj["Prediksi Produksi"].sum()))
 
-        # === VISUALISASI (Altair side-by-side) ===
+        # === VISUALISASI ===
         df_actual = df_last.reset_index()[["Kecamatan"]].copy()
         df_actual["Tahun"] = last_year
         df_actual["Produksi"] = df_last["Produksi"].values
@@ -82,7 +89,7 @@ if uploaded_file is not None:
                 x=alt.X("Kecamatan:N", sort="-y"),
                 y=alt.Y("Produksi:Q"),
                 color=alt.Color("Tahun:N", scale=alt.Scale(scheme="tableau10")),
-                xOffset="Tahun:N",  # 👉 side-by-side
+                xOffset="Tahun:N",
                 tooltip=["Kecamatan", "Tahun", "Produksi"]
             )
             .properties(width=700, height=400)
@@ -105,14 +112,14 @@ if uploaded_file is not None:
         )
         st.altair_chart(chart_total, use_container_width=True)
 
-        # === 🔹 Tambahkan Tombol Segmentasi Setelah Prediksi ===
-        st.write("---")
-        st.subheader("🔍 Segmentasi Hasil Prediksi Produksi")
-        if st.button("🧩 Lakukan Segmentasi Hasil Prediksi"):
-            df_clustered, chart_cluster = do_clustering(df_proj)
-            st.write("### 📊 Hasil Segmentasi Kecamatan")
-            st.dataframe(df_clustered[["Kecamatan", "Cluster", "Prediksi Produksi"]])
-            st.altair_chart(chart_cluster, use_container_width=True)
-
+# ✅ tombol segmentasi tetap aktif setelah prediksi
+if st.session_state.df_proj is not None:
+    st.write("---")
+    st.subheader("🔍 Segmentasi Hasil Prediksi Produksi")
+    if st.button("🧩 Lakukan Segmentasi Hasil Prediksi"):
+        df_clustered, chart_cluster = do_clustering(st.session_state.df_proj)
+        st.write("### 📊 Hasil Segmentasi Kecamatan")
+        st.dataframe(df_clustered[["Kecamatan", "Cluster", "Prediksi Produksi"]])
+        st.altair_chart(chart_cluster, use_container_width=True)
 else:
     st.info("⬆️ Silakan unggah file Excel untuk mulai prediksi.")
