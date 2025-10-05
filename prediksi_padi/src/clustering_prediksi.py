@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 import altair as alt
 
 def do_clustering(df, n_clusters=3):
@@ -43,13 +44,24 @@ def do_clustering(df, n_clusters=3):
     feature_cols = needed[1:]  # skip Kecamatan
     X = df[feature_cols].values
 
+    # --- normalisasi data biar KMeans tidak bias ke variabel besar ---
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
     # --- kmeans clustering ---
     km = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-    labels = km.fit_predict(X)
+    labels = km.fit_predict(X_scaled)
 
     # --- tambahkan cluster ke dataframe ---
     df_clustered = df.copy()
     df_clustered["Cluster"] = labels
+
+    # --- opsional: beri label kategori agar mudah dibaca ---
+    df_clustered["Kategori"] = df_clustered["Cluster"].map({
+        0: "Cluster 1 – Produksi Rendah",
+        1: "Cluster 2 – Produksi Sedang",
+        2: "Cluster 3 – Produksi Tinggi"
+    })
 
     # --- buat visualisasi sederhana ---
     chart = (
@@ -61,7 +73,7 @@ def do_clustering(df, n_clusters=3):
             color=alt.Color("Cluster:N", scale=alt.Scale(scheme="tableau10")),
             tooltip=[
                 "Kecamatan","Prediksi Produksi","Luas Sawah","Luas Tanam",
-                "Luas Panen","Rasio_Tanam","Intensitas_Sawah","Cluster"
+                "Luas Panen","Rasio_Tanam","Intensitas_Sawah","Cluster","Kategori"
             ]
         )
         .properties(width=700, height=400,
@@ -69,4 +81,3 @@ def do_clustering(df, n_clusters=3):
     )
 
     return df_clustered, chart
-
