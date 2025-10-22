@@ -88,7 +88,7 @@ else:
 
         # === PETA ===
         st.subheader("🗺️ Peta Spasial Cluster Produksi Padi")
-        geo = gpd.read_file("data/sidoarjo_kecamatan.geojson")
+        geo = gpd.read_file("prediksi_padi/data/sidoarjo_kecamatan.geojson")
         merged = geo.merge(df_clustered, on="Kecamatan", how="left")
 
         m = folium.Map(location=[-7.45, 112.7], zoom_start=11)
