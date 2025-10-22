@@ -120,8 +120,8 @@ else:
             geo = geo.rename(columns={"NAME_3": "Kecamatan"})
 
         # --- 🔧 Normalisasi nama biar bisa merge tanpa gagal ---
-        geo["Kecamatan"] = geo["Kecamatan"].str.strip().str.lower()
-        df_clustered["Kecamatan"] = df_clustered["Kecamatan"].str.strip().str.lower()
+        geo["Kecamatan"] = geo["Kecamatan"].str.strip().str.upper()
+        df_clustered["Kecamatan"] = df_clustered["Kecamatan"].str.strip().str.upper()
 
         # --- Merge data ---
         merged = geo.merge(df_clustered, on="Kecamatan", how="left")
