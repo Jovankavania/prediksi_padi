@@ -111,13 +111,30 @@ else:
 
         # === PETA ===
         st.subheader("🗺️ Peta Spasial Cluster Produksi Padi")
+
         geo_path = "prediksi_padi/data/sidoarjo_kecamatan.geojson"
         geo = gpd.read_file(geo_path)
+
+        # Pastikan kolom nama wilayah konsisten
         if "NAME_3" in geo.columns and "Kecamatan" not in geo.columns:
             geo = geo.rename(columns={"NAME_3": "Kecamatan"})
+
+        # --- 🔧 Normalisasi nama biar bisa merge tanpa gagal ---
+        geo["Kecamatan"] = geo["Kecamatan"].str.strip().str.lower()
+        df_clustered["Kecamatan"] = df_clustered["Kecamatan"].str.strip().str.lower()
+
+        # --- Merge data ---
         merged = geo.merge(df_clustered, on="Kecamatan", how="left")
 
+        # --- Cek kalau masih ada yang belum ketemu ---
+        missing = merged[merged["Cluster"].isna()][["Kecamatan"]]
+        if not missing.empty:
+            st.warning(f"⚠️ {len(missing)} kecamatan tidak ditemukan dalam hasil prediksi:")
+            st.write(missing)
+
+        # --- Peta Choropleth ---
         m = folium.Map(location=[-7.45, 112.7], zoom_start=11)
+
         folium.Choropleth(
             geo_data=merged,
             data=merged,
