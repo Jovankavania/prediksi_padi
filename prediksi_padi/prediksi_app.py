@@ -19,6 +19,14 @@ uploaded_file = st.sidebar.file_uploader("Unggah file Excel", type=["xlsx"])
 prediksi_button = False
 segmentasi_button = False
 
+# ✅ Inisialisasi session_state
+if "df_proj" not in st.session_state:
+    st.session_state.df_proj = None
+if "df_clustered" not in st.session_state:
+    st.session_state.df_clustered = None
+if "segmentasi_done" not in st.session_state:
+    st.session_state.segmentasi_done = False
+
 if uploaded_file is not None:
     st.sidebar.success("✅ File berhasil diunggah.")
     prediksi_button = st.sidebar.button("🔮 Jalankan Prediksi")
@@ -35,6 +43,9 @@ else:
 
     last_year = df_pred["Tahun"].max()
 
+    # ==========================
+    # 🔮 PROYEKSI PRODUKSI
+    # ==========================
     if prediksi_button:
         growth = (
             df_pred[df_pred["Tahun"].between(last_year - 2, last_year)]
@@ -44,12 +55,14 @@ else:
             .groupby(df_pred["Kecamatan"])
             .mean()
         )
+
         df_last = df_pred[df_pred["Tahun"] == last_year].set_index("Kecamatan")
         df_proj = df_last.copy()
         df_proj[["Luas Sawah", "Luas Tanam", "Luas Panen"]] *= (1 + growth)
         df_proj["Tahun"] = last_year + 1
         df_proj = df_proj.reset_index()
 
+        # fitur turunan
         df_proj["Rasio_Tanam"] = df_proj["Luas Panen"] / (df_proj["Luas Tanam"] + 1e-9)
         df_proj["Intensitas_Sawah"] = df_proj["Luas Tanam"] / (df_proj["Luas Sawah"] + 1e-9)
         df_proj["Panen_x_Intensitas"] = df_proj["Luas Panen"] * df_proj["Intensitas_Sawah"]
@@ -77,10 +90,20 @@ else:
         )
         st.altair_chart(chart, use_container_width=True)
 
-    if segmentasi_button and "df_proj" in st.session_state:
+    # ==========================
+    # 🧩 SEGMENTASI + PETA
+    # ==========================
+    if segmentasi_button and st.session_state.df_proj is not None:
         df_clustered, chart_cluster = do_clustering(st.session_state.df_proj)
         st.session_state.df_clustered = df_clustered
         st.session_state.chart_cluster = chart_cluster
+        st.session_state.segmentasi_done = True
+        st.success("✅ Segmentasi selesai! Hasil ditampilkan di bawah 👇")
+
+    # ✅ tampilkan hasil segmentasi & peta kalau sudah pernah dijalankan
+    if st.session_state.segmentasi_done and st.session_state.df_clustered is not None:
+        df_clustered = st.session_state.df_clustered
+        chart_cluster = st.session_state.chart_cluster
 
         st.subheader("🧭 Hasil Segmentasi Kecamatan")
         st.dataframe(df_clustered[["Kecamatan", "Cluster", "Prediksi Produksi"]])
@@ -88,7 +111,10 @@ else:
 
         # === PETA ===
         st.subheader("🗺️ Peta Spasial Cluster Produksi Padi")
-        geo = gpd.read_file("prediksi_padi/data/sidoarjo_kecamatan.geojson")
+        geo_path = "prediksi_padi/data/sidoarjo_kecamatan.geojson"
+        geo = gpd.read_file(geo_path)
+        if "NAME_3" in geo.columns and "Kecamatan" not in geo.columns:
+            geo = geo.rename(columns={"NAME_3": "Kecamatan"})
         merged = geo.merge(df_clustered, on="Kecamatan", how="left")
 
         m = folium.Map(location=[-7.45, 112.7], zoom_start=11)
