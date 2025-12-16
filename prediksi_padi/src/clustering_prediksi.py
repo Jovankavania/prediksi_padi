@@ -28,37 +28,24 @@ def do_clustering(df, n_clusters=3):
     labels = km.fit_predict(X_scaled)
 
     df_clustered = df.copy()
-    df_clustered["Cluster"] = labels
 
-    # mapping sesuai interpretasimu
+    # 1) Simpan cluster angka dengan nama yang jelas
+    df_clustered["Cluster_Angka"] = labels
+
+    # (Kalau kamu masih butuh nama "Cluster" untuk peta/kompatibilitas, tetap simpan juga)
+    df_clustered["Cluster"] = df_clustered["Cluster_Angka"]
+
+    # 2) Label bisnis sesuai interpretasimu
     label_map = {
         0: "Unggul",
         1: "Kecil",
         2: "Sedang"
     }
-    df_clustered["Cluster_Label"] = df_clustered["Cluster"].map(label_map)
+    df_clustered["Cluster_Label"] = df_clustered["Cluster_Angka"].map(label_map)
+
+    # 3) Urutan tampil (opsional) biar konsisten untuk BI report
+    order_map = {"Unggul": 1, "Sedang": 2, "Kecil": 3}
+    df_clustered["Urutan_Klaster"] = df_clustered["Cluster_Label"].map(order_map)
 
     # PCA untuk visualisasi
     pca = PCA(n_components=2, random_state=42)
-    X_pca = pca.fit_transform(X_scaled)
-    df_clustered["PC1"] = X_pca[:, 0]
-    df_clustered["PC2"] = X_pca[:, 1]
-
-    # Visualisasi: warna pakai label biar kebaca
-    chart = (
-        alt.Chart(df_clustered)
-        .mark_circle(size=200)
-        .encode(
-            x=alt.X("PC1:Q", title="Komponen Utama 1"),
-            y=alt.Y("PC2:Q", title="Komponen Utama 2"),
-            color=alt.Color("Cluster_Label:N", title="Klaster"),
-            tooltip=[
-                "Kecamatan", "Cluster", "Cluster_Label",
-                "Prediksi Produksi", "Luas Panen", "Luas Tanam", "Luas Sawah",
-                "Rasio_Tanam", "Intensitas_Sawah"
-            ],
-        )
-        .properties(width=700, height=400, title="📊 Segmentasi Kecamatan (PCA 2D Projection)")
-    )
-
-    return df_clustered, chart
