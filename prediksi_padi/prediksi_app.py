@@ -106,7 +106,7 @@ else:
         chart_cluster = st.session_state.chart_cluster
 
         st.subheader("🧭 Hasil Segmentasi Kecamatan")
-        st.dataframe(df_clustered[["Kecamatan", "Cluster", "Prediksi Produksi"]])
+        st.dataframe(df_clustered[["Kecamatan", "Cluster", "Cluster_Label", ""Prediksi Produksi"]])
         st.altair_chart(chart_cluster, use_container_width=True)
 
         # === PETA ===
@@ -149,8 +149,8 @@ else:
         folium.GeoJson(
             merged,
             tooltip=folium.GeoJsonTooltip(
-                fields=["Kecamatan", "Cluster", "Prediksi Produksi"],
-                aliases=["Kecamatan:", "Cluster:", "Prediksi Produksi (kw):"],
+                fields=["Kecamatan", "Cluster", "Cluster_Label", "Prediksi Produksi"],
+                aliases=["Kecamatan:", "Cluster (angka):", "Cluster (label)", "Prediksi Produksi (kw):"],
                 localize=True,
             ),
         ).add_to(m)
