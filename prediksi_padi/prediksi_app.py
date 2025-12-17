@@ -7,10 +7,10 @@ import folium
 from streamlit_folium import st_folium
 from src.clustering_prediksi import do_clustering
 
-# === CONFIG ===
+#CONFIG
 st.set_page_config(page_title="Prediksi Produksi Padi", page_icon="🌾", layout="wide")
 
-# --- Sidebar (Panel Kiri) ---
+#BUAT SIDEBAR
 st.sidebar.title("📂 Upload & Prediksi Data")
 st.sidebar.info("Pastikan file Excel memiliki kolom berikut:\n\n"
                 "Kecamatan | Komoditas | Tahun | Luas Sawah | Luas Tanam | Luas Panen | Produksi")
@@ -19,7 +19,7 @@ uploaded_file = st.sidebar.file_uploader("Unggah file Excel", type=["xlsx"])
 prediksi_button = False
 segmentasi_button = False
 
-# ✅ Inisialisasi session_state
+#INISIALISASI SESSION
 if "df_proj" not in st.session_state:
     st.session_state.df_proj = None
 if "df_clustered" not in st.session_state:
@@ -32,7 +32,7 @@ if uploaded_file is not None:
     prediksi_button = st.sidebar.button("🔮 Jalankan Prediksi")
     segmentasi_button = st.sidebar.button("🧩 Segmentasi + Peta")
 
-# --- Area Utama (Kanan) ---
+#HALAMAN UTAMA
 st.title("🌾 Prediksi Produksi Padi – Growth Projection")
 
 if uploaded_file is None:
@@ -43,9 +43,7 @@ else:
 
     last_year = df_pred["Tahun"].max()
 
-    # ==========================
-    # 🔮 PROYEKSI PRODUKSI
-    # ==========================
+    #PROYEKSI UNTUK PRODUKSI
     if prediksi_button:
         growth = (
             df_pred[df_pred["Tahun"].between(last_year - 2, last_year)]
@@ -90,9 +88,7 @@ else:
         )
         st.altair_chart(chart, use_container_width=True)
 
-    # ==========================
-    # 🧩 SEGMENTASI + PETA
-    # ==========================
+    #BAGIAN SEGMENTASI DAN PETA 
     if segmentasi_button and st.session_state.df_proj is not None:
         df_clustered, chart_cluster = do_clustering(st.session_state.df_proj)
         st.session_state.df_clustered = df_clustered
@@ -100,7 +96,7 @@ else:
         st.session_state.segmentasi_done = True
         st.success("✅ Segmentasi selesai! Hasil ditampilkan di bawah 👇")
 
-    # ✅ tampilkan hasil segmentasi & peta kalau sudah pernah dijalankan
+    #TAMPILKAN HASIL SEGMENTASI
     if st.session_state.segmentasi_done and st.session_state.df_clustered is not None:
         df_clustered = st.session_state.df_clustered
         chart_cluster = st.session_state.chart_cluster
@@ -109,7 +105,7 @@ else:
         st.dataframe(df_clustered[["Kecamatan", "Cluster", "Cluster_Label", "Prediksi Produksi"]])
         st.altair_chart(chart_cluster, use_container_width=True)
 
-        # === PETA ===
+        #PETAA
         st.subheader("🗺️ Peta Spasial Cluster Produksi Padi")
 
         geo_path = "prediksi_padi/data/sidoarjo_kecamatan.geojson"
@@ -119,20 +115,18 @@ else:
         if "NAME_3" in geo.columns and "Kecamatan" not in geo.columns:
             geo = geo.rename(columns={"NAME_3": "Kecamatan"})
 
-        # --- 🔧 Normalisasi nama biar bisa merge tanpa gagal ---
+        #NORMALISASI NAMA
         geo["Kecamatan"] = geo["Kecamatan"].str.strip().str.upper()
         df_clustered["Kecamatan"] = df_clustered["Kecamatan"].str.strip().str.upper()
 
-        # --- Merge data ---
+        #MERGE
         merged = geo.merge(df_clustered, on="Kecamatan", how="left")
-
-        # --- Cek kalau masih ada yang belum ketemu ---
         missing = merged[merged["Cluster"].isna()][["Kecamatan"]]
         if not missing.empty:
             st.warning(f"⚠️ {len(missing)} kecamatan tidak ditemukan dalam hasil prediksi:")
             st.write(missing)
 
-        # --- Peta Choropleth ---
+        #PETA CHLOROPETH
         m = folium.Map(location=[-7.45, 112.7], zoom_start=11)
 
         folium.Choropleth(
